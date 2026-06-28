@@ -197,7 +197,7 @@ function emailSummaryHtml(rep){
       '<div style="border:1px solid #e6e6e3;background:#ffffff;border-radius:12px;padding:13px 16px;">'+
         '<div style="font-size:10px;letter-spacing:.4px;text-transform:uppercase;color:#6b6b6b;font-family:Arial,Helvetica,sans-serif;">Hours</div>'+
         '<div style="font-size:22px;font-weight:bold;color:#1d1d1f;margin-top:4px;font-family:Arial,Helvetica,sans-serif;">'+rep.paid.toFixed(2)+' h</div>'+
-        '<div style="font-size:11px;color:#6b6b6b;margin-top:3px;font-family:Arial,Helvetica,sans-serif;">'+rep.full.toFixed(2)+' h worked</div>'+
+        '<div style="font-size:11px;color:#6b6b6b;margin-top:3px;font-family:Arial,Helvetica,sans-serif;">'+rep.full.toFixed(2)+' h incl. breaks</div>'+
       '</div>'+
   '</td></tr></table>';
 }
@@ -221,7 +221,7 @@ function emailHtmlTable(rep){
     '<tbody>'+bodyRows+total+'</tbody></table>';
 }
 function emailTextSummary(rep){
-  return "Hours: "+rep.paid.toFixed(2)+" h  ("+rep.full.toFixed(2)+" h worked)";
+  return "Hours: "+rep.paid.toFixed(2)+" h  ("+rep.full.toFixed(2)+" h incl. breaks)";
 }
 function emailTextTable(rep){
   const pd=(s,w)=>String(s).padEnd(w);
@@ -253,15 +253,15 @@ function emailHtmlDocument(rep, tpl){
                  .replace(/{{\s*table\s*}}/g, tableBlock)
                  .replace(/{{\s*period\s*}}/g, esc(rep.label))
                  .replace(/{{\s*total\s*}}/g, rep.paid.toFixed(2));
-  return '<div style="background:#f7f7f5;padding:24px 16px;font-family:Arial,Helvetica,sans-serif;">'+
-    '<div style="max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #e6e6e3;border-radius:16px;overflow:hidden;">'+
+  // One self-contained white card with explicit backgrounds + dark text on every
+  // block, so dark-mode mail clients render it as a clean light card rather than
+  // partially inverting it. (Pasted HTML can't carry <head> color-scheme hints.)
+  return '<div style="max-width:640px;background:#ffffff;border:1px solid #e6e6e3;border-radius:16px;overflow:hidden;font-family:Arial,Helvetica,sans-serif;color:#1d1d1f;">'+
       '<div style="background:#1a7f4b;padding:18px 22px;">'+
         '<div style="color:#ffffff;font-size:18px;font-weight:bold;font-family:Arial,Helvetica,sans-serif;">Work Hours</div>'+
         '<div style="color:#cfe7d8;font-size:13px;margin-top:2px;font-family:Arial,Helvetica,sans-serif;">'+esc(rep.label)+'</div>'+
       '</div>'+
-      '<div style="padding:22px;color:#1d1d1f;font-size:14px;line-height:1.55;font-family:Arial,Helvetica,sans-serif;">'+inner+'</div>'+
-    '</div>'+
-    '<div style="max-width:640px;margin:10px auto 0;text-align:center;color:#b0b0ae;font-size:11px;font-family:Arial,Helvetica,sans-serif;">Sent from Work Hours</div>'+
+      '<div style="padding:22px;background:#ffffff;color:#1d1d1f;font-size:14px;line-height:1.55;font-family:Arial,Helvetica,sans-serif;">'+inner+'</div>'+
   '</div>';
 }
 // Rich copy that works on plain-HTTP origins (Clipboard API is blocked there).
@@ -335,7 +335,7 @@ function render(){
 
   const afterTax = paid*PAY.afterTaxPerHour, ferie = paid*PAY.grossPerHour*PAY.feriePct;
   document.getElementById("earn").innerHTML = list.length ?
-    '<div class="ecard"><div class="elbl">Hours</div><div class="eval">'+paid.toFixed(2)+' h</div><div class="esub">'+full.toFixed(2)+' h worked</div></div>'+
+    '<div class="ecard"><div class="elbl">Hours</div><div class="eval">'+paid.toFixed(2)+' h</div><div class="esub">'+full.toFixed(2)+' h incl. breaks</div></div>'+
     '<div class="ecard hi"><div class="elbl">After tax</div><div class="eval">'+kr(afterTax)+'</div><div class="esub">+ feriepenge '+kr(ferie)+'</div></div>'+
     '<div class="ecard"><div class="elbl">Take-home</div><div class="eval">'+kr(afterTax+ferie)+'</div><div class="esub">after tax + feriepenge</div></div>' : "";
 }
