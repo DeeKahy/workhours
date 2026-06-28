@@ -125,8 +125,9 @@ textarea.field { resize:vertical; min-height:130px; line-height:1.45; font-famil
         Variables: <code>{{table}}</code> (hours table), <code>{{summary}}</code> (the Hours card), <code>{{period}}</code>, <code>{{total}}</code>.
         If you don't include <code>{{summary}}</code>, the Hours card is shown above the table automatically.
         Recipient, subject and message are saved automatically.
-        <b>Email this period</b> opens your mail app with everything prefilled (plain-text table) so you can just hit send,
-        and also copies a <b>formatted table</b> to your clipboard — paste it into the body for the styled version.
+        <b>Email this period</b> opens your mail app with the recipient and subject filled in, and copies the
+        <b>formatted email</b> to your clipboard — paste it into the message body and send.
+        (Email links can't carry a formatted table, so this one paste is needed.)
       </div>
       <div class="row" style="margin-top:12px;">
         <button class="btn green" id="emSend">✉ Email this period</button>
@@ -391,10 +392,15 @@ function doEmail(copyOnly){
     st.textContent = ok ? "Formatted email copied — paste it into a new message." : "Couldn't access the clipboard (browser blocked it).";
     return;
   }
+  // Email links (mailto:) can't carry an HTML body — only plain text. So we open
+  // the mail app with the recipient + subject filled in and the formatted email
+  // already on the clipboard; the user pastes it into the empty body and sends.
+  // Only if the clipboard copy failed do we fall back to a plain-text body.
   const to = (settings.email||"").trim();
-  const url = "mailto:"+to+"?subject="+encodeURIComponent(subject)+"&body="+encodeURIComponent(fillVarsText(tplT, rep));
-  st.textContent = ok ? "Opening your mail app… formatted table copied — paste to swap in the styled version."
-                      : "Opening your mail app… (clipboard copy was blocked, so the plain-text table is used).";
+  let url = "mailto:"+to+"?subject="+encodeURIComponent(subject);
+  if(!ok) url += "&body="+encodeURIComponent(fillVarsText(tplT, rep));
+  st.textContent = ok ? "Mail opened — recipient & subject filled in. Paste (long-press → Paste, or ⌘V) to drop in your formatted hours, then send."
+                      : "Mail opened with a plain-text version — the clipboard was blocked, so the formatted table couldn't be copied.";
   window.location.href = url;
 }
 document.getElementById("emSend").addEventListener("click", ()=>doEmail(false));
