@@ -193,31 +193,32 @@ function periodReport(off){
 }
 // Hours summary card (pay/tax figures are intentionally NOT included in the email).
 function emailSummaryHtml(rep){
-  return '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:separate;width:100%;"><tr><td valign="top">'+
-      '<div style="border:1px solid #e6e6e3;background:#ffffff;border-radius:12px;padding:13px 16px;">'+
-        '<div style="font-size:10px;letter-spacing:.4px;text-transform:uppercase;color:#6b6b6b;font-family:Arial,Helvetica,sans-serif;">Hours</div>'+
+  return '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:separate;width:100%;color-scheme:light;"><tr>'+
+      '<td valign="top" bgcolor="#ffffff" style="background-color:#ffffff;border:1px solid #e6e6e3;border-radius:12px;padding:13px 16px;">'+
+        '<div style="font-size:10px;letter-spacing:.4px;text-transform:uppercase;color:#5f6b64;font-family:Arial,Helvetica,sans-serif;">Hours</div>'+
         '<div style="font-size:22px;font-weight:bold;color:#1d1d1f;margin-top:4px;font-family:Arial,Helvetica,sans-serif;">'+rep.paid.toFixed(2)+' h</div>'+
-        '<div style="font-size:11px;color:#6b6b6b;margin-top:3px;font-family:Arial,Helvetica,sans-serif;">'+rep.full.toFixed(2)+' h incl. breaks</div>'+
-      '</div>'+
-  '</td></tr></table>';
+        '<div style="font-size:11px;color:#5f6b64;margin-top:3px;font-family:Arial,Helvetica,sans-serif;">'+rep.full.toFixed(2)+' h incl. breaks</div>'+
+      '</td>'+
+  '</tr></table>';
 }
 function emailHtmlTable(rep){
-  const th = (s,al)=>'<th align="'+(al||'left')+'" style="padding:9px 12px;text-align:'+(al||'left')+';background:#1a7f4b;color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:.5px;font-weight:bold;">'+s+'</th>';
-  const td = (s,al,extra)=>'<td align="'+(al||'left')+'" style="padding:9px 12px;text-align:'+(al||'left')+';border-bottom:1px solid #eeeeee;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#1d1d1f;'+(extra||'')+'">'+s+'</td>';
-  let bodyRows = rep.rows.map((r,i)=>
-    '<tr style="background:'+(i%2?'#ffffff':'#fafafa')+';">'+
-      td('<b>'+esc(r.date)+'</b><br><span style="color:#9a9a98;font-size:11px;">'+esc(r.wd)+'</span>')+
+  const th = (s,al)=>'<th align="'+(al||'left')+'" bgcolor="#1a7f4b" style="padding:9px 12px;text-align:'+(al||'left')+';background-color:#1a7f4b;color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:.5px;font-weight:bold;">'+s+'</th>';
+  const td = (s,al,extra)=>'<td align="'+(al||'left')+'" style="padding:9px 12px;text-align:'+(al||'left')+';border-bottom:1px solid #e6e6e3;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#1d1d1f;'+(extra||'')+'">'+s+'</td>';
+  let bodyRows = rep.rows.map((r,i)=>{
+    const bg = i%2 ? '#ffffff' : '#f4f4f1';
+    return '<tr bgcolor="'+bg+'" style="background-color:'+bg+';">'+
+      td('<b>'+esc(r.date)+'</b><br><span style="color:#7a7a78;font-size:11px;">'+esc(r.wd)+'</span>')+
       td(esc(r.in)||'—','center')+ td(esc(r.out)||'—','center')+ td(r.brk+' min','center')+
       td(r.hours!=null?r.hours.toFixed(2):'—','right','font-weight:bold;')+
-      td(esc(r.note)||'<span style="color:#c8c8c6;">—</span>')+'</tr>'
-  ).join("");
-  if(!rep.rows.length) bodyRows = '<tr><td colspan="6" style="padding:22px;text-align:center;color:#9a9a98;font-family:Arial,Helvetica,sans-serif;font-size:13px;">No hours logged for this period.</td></tr>';
-  const total = '<tr style="background:#eaf5ee;">'+
-    '<td colspan="4" style="padding:11px 12px;font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:bold;color:#1d1d1f;border-top:2px solid #cfe7d8;">Total</td>'+
-    '<td align="right" style="padding:11px 12px;text-align:right;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:bold;color:#1a7f4b;border-top:2px solid #cfe7d8;">'+rep.paid.toFixed(2)+' h</td>'+
-    '<td style="border-top:2px solid #cfe7d8;"></td></tr>';
-  return '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;width:100%;border:1px solid #e6e6e3;border-radius:12px;overflow:hidden;">'+
-    '<thead><tr>'+[th('Date'),th('In','center'),th('Out','center'),th('Break','center'),th('Hours','right'),th('Note')].join("")+'</tr></thead>'+
+      td(esc(r.note)||'<span style="color:#a8a8a6;">—</span>')+'</tr>';
+  }).join("");
+  if(!rep.rows.length) bodyRows = '<tr bgcolor="#ffffff" style="background-color:#ffffff;"><td colspan="6" style="padding:22px;text-align:center;color:#7a7a78;font-family:Arial,Helvetica,sans-serif;font-size:13px;">No hours logged for this period.</td></tr>';
+  const total = '<tr bgcolor="#e7f2ea" style="background-color:#e7f2ea;">'+
+    '<td colspan="4" style="padding:11px 12px;font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:bold;color:#1d1d1f;border-top:2px solid #bcdcc7;">Total</td>'+
+    '<td align="right" style="padding:11px 12px;text-align:right;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:bold;color:#0f5c37;border-top:2px solid #bcdcc7;">'+rep.paid.toFixed(2)+' h</td>'+
+    '<td style="border-top:2px solid #bcdcc7;"></td></tr>';
+  return '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" bgcolor="#ffffff" style="color-scheme:light;border-collapse:collapse;width:100%;border:1px solid #e6e6e3;border-radius:12px;overflow:hidden;background-color:#ffffff;">'+
+    '<thead><tr bgcolor="#1a7f4b" style="background-color:#1a7f4b;">'+[th('Date'),th('In','center'),th('Out','center'),th('Break','center'),th('Hours','right'),th('Note')].join("")+'</tr></thead>'+
     '<tbody>'+bodyRows+total+'</tbody></table>';
 }
 function emailTextSummary(rep){
@@ -253,16 +254,17 @@ function emailHtmlDocument(rep, tpl){
                  .replace(/{{\s*table\s*}}/g, tableBlock)
                  .replace(/{{\s*period\s*}}/g, esc(rep.label))
                  .replace(/{{\s*total\s*}}/g, rep.paid.toFixed(2));
-  // One self-contained white card with explicit backgrounds + dark text on every
-  // block, so dark-mode mail clients render it as a clean light card rather than
-  // partially inverting it. (Pasted HTML can't carry <head> color-scheme hints.)
-  return '<div style="max-width:640px;background:#ffffff;border:1px solid #e6e6e3;border-radius:16px;overflow:hidden;font-family:Arial,Helvetica,sans-serif;color:#1d1d1f;">'+
-      '<div style="background:#1a7f4b;padding:18px 22px;">'+
+  // Table-based layout with bgcolor= attributes and an inline color-scheme:light.
+  // This is the combination that survives Apple Mail's dark-mode transform — CSS
+  // backgrounds on <div>s get overridden there, but bgcolor + color-scheme:light
+  // tell Mail to keep the email light. (Pasted HTML can't carry <head> hints.)
+  return '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" bgcolor="#ffffff" style="color-scheme:light;max-width:640px;width:100%;border:1px solid #e6e6e3;border-radius:16px;border-collapse:separate;overflow:hidden;background-color:#ffffff;font-family:Arial,Helvetica,sans-serif;color:#1d1d1f;">'+
+      '<tr><td bgcolor="#1a7f4b" style="background-color:#1a7f4b;padding:18px 22px;">'+
         '<div style="color:#ffffff;font-size:18px;font-weight:bold;font-family:Arial,Helvetica,sans-serif;">Work Hours</div>'+
         '<div style="color:#cfe7d8;font-size:13px;margin-top:2px;font-family:Arial,Helvetica,sans-serif;">'+esc(rep.label)+'</div>'+
-      '</div>'+
-      '<div style="padding:22px;background:#ffffff;color:#1d1d1f;font-size:14px;line-height:1.55;font-family:Arial,Helvetica,sans-serif;">'+inner+'</div>'+
-  '</div>';
+      '</td></tr>'+
+      '<tr><td bgcolor="#ffffff" style="background-color:#ffffff;padding:22px;color:#1d1d1f;font-size:14px;line-height:1.55;font-family:Arial,Helvetica,sans-serif;">'+inner+'</td></tr>'+
+  '</table>';
 }
 // Rich copy that works on plain-HTTP origins (Clipboard API is blocked there).
 function copyRich(html){
