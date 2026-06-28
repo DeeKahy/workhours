@@ -1,0 +1,17 @@
+{
+  "users": {
+    "alice": {
+      "password": "changeme",
+      "entries": [
+        { "id": "s1", "date": "2026-01-05", "in": "09:00", "out": "17:00", "break": 30, "note": "Example day" },
+        { "id": "s2", "date": "2026-01-06", "in": "09:00", "out": "16:30", "break": 30, "note": "" },
+        { "id": "s3", "date": "2026-01-07", "in": "", "out": "", "break": 0, "note": "Holiday" }
+      ],
+      "settings": {
+        "email": "boss@example.com",
+        "subject": "Work hours {{period}}",
+        "template": "Hi,\n\nHere are my work hours for {{period}}:\n\n{{table}}\n\nTotal: {{total}} hours.\n\nBest regards"
+      }
+    }
+  }
+}

@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Work Hours</title>
+<!-- Home-screen / PWA: add to iOS home screen for a fullscreen app-like launch -->
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/icon-180.png">
+<link rel="icon" type="image/png" href="/icon-180.png">
+<meta name="theme-color" content="#1a7f4b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Work Hours">
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body { margin:0; padding:20px; padding-top:max(20px, env(safe-area-inset-top)); padding-left:max(20px, env(safe-area-inset-left)); padding-right:max(20px, env(safe-area-inset-right)); padding-bottom:max(20px, env(safe-area-inset-bottom)); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; background:#f7f7f5; color:#1d1d1f; }
+.wrap { max-width:760px; margin:0 auto; }
+h1 { font-size:20px; margin:0 0 4px; }
+.sub { color:#6b6b6b; font-size:13px; margin:0 0 18px; }
+.card { background:#fff; border:1px solid #e6e6e3; border-radius:16px; padding:20px; box-shadow:0 1px 3px rgba(0,0,0,.04); }
+.row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+input { font:inherit; }
+.field { width:100%; padding:11px 12px; border:1px solid #d8d8d5; border-radius:10px; font-size:15px; margin-top:10px; }
+.field:focus { border-color:#1a7f4b; outline:none; }
+.btn { border:none; border-radius:12px; padding:12px 16px; font-size:15px; font-weight:600; cursor:pointer; }
+.btn.green { background:#1a7f4b; color:#fff; } .btn.dark { background:#1d1d1f; color:#fff; }
+.btn.ghost { background:#fff; border:1px solid #d8d8d5; color:#1d1d1f; }
+.btn:hover { filter:brightness(1.06); }
+.err { color:#b4422f; font-size:13px; min-height:18px; margin-top:8px; }
+.topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+.who { font-size:13px; color:#6b6b6b; }
+.clock { text-align:center; margin-bottom:16px; }
+.bigbtn { border:none; border-radius:14px; padding:18px; width:100%; font-size:19px; font-weight:600; color:#fff; cursor:pointer; }
+.in { background:#1a7f4b; } .out { background:#b4422f; }
+.status { font-size:14px; color:#6b6b6b; margin-bottom:12px; }
+.pbar { display:flex; align-items:center; justify-content:space-between; background:#fff; border:1px solid #e6e6e3; border-radius:12px; padding:10px 14px; margin:14px 0 12px; }
+.pbar .lbl { font-weight:600; font-size:14px; } .pbar .tot { color:#1a7f4b; font-weight:600; font-size:14px; }
+.nav { background:#f0f0ee; border:1px solid #e0e0dd; border-radius:8px; padding:5px 11px; cursor:pointer; font-size:15px; }
+.tablewrap { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; background:#fff; border:1px solid #e6e6e3; border-radius:12px; overflow:hidden; min-width:560px; }
+th,td { padding:9px 10px; text-align:left; font-size:13px; border-bottom:1px solid #f0f0ee; }
+th { background:#fafafa; color:#6b6b6b; font-size:12px; text-transform:uppercase; letter-spacing:.3px; }
+tr:last-child td { border-bottom:none; }
+td input { border:1px solid transparent; background:transparent; padding:4px 5px; border-radius:6px; width:100%; }
+td input:hover { border-color:#e0e0dd; } td input:focus { border-color:#1a7f4b; outline:none; background:#fff; }
+td.hrs { font-variant-numeric:tabular-nums; font-weight:600; }
+td input.brk { width:52px; text-align:center; }
+td input.tm { width:64px; text-align:center; font-variant-numeric:tabular-nums; }
+.wd { color:#9a9a98; font-size:11px; margin-left:2px; }
+.del { background:none; border:none; color:#b4422f; cursor:pointer; font-size:16px; opacity:.55; } .del:hover { opacity:1; }
+.empty { text-align:center; color:#9a9a98; padding:24px; }
+.earn { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:16px; }
+.ecard { background:#fff; border:1px solid #e6e6e3; border-radius:12px; padding:12px 14px; }
+.ecard.hi { background:#eaf5ee; border-color:#cfe7d8; }
+.elbl { font-size:11px; text-transform:uppercase; letter-spacing:.3px; color:#6b6b6b; }
+.eval { font-size:19px; font-weight:700; margin-top:3px; font-variant-numeric:tabular-nums; }
+.esub { font-size:11px; color:#6b6b6b; margin-top:2px; }
+.actions { display:flex; gap:10px; margin-top:16px; flex-wrap:wrap; }
+.sync { font-size:12px; color:#9a9a98; margin-top:10px; }
+textarea.field { resize:vertical; min-height:130px; line-height:1.45; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:13px; }
+.ehdr { font-weight:600; font-size:15px; }
+.ehint { font-size:12px; color:#6b6b6b; margin-top:9px; line-height:1.5; }
+.ehint code { background:#f0f0ee; padding:1px 5px; border-radius:5px; font-size:11px; }
+@media (max-width:520px){ .earn { grid-template-columns:1fr; } }
+.hidden { display:none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Login / signup -->
+  <div id="authView">
+    <h1>Work Hours</h1>
+    <p class="sub">Log in, or pick any username and password to sign up.</p>
+    <div class="card" style="max-width:340px;">
+      <input class="field" id="auUser" placeholder="Username" autocomplete="username">
+      <input class="field" id="auPass" type="password" placeholder="Password" autocomplete="current-password">
+      <div class="err" id="auErr"></div>
+      <div class="row" style="margin-top:6px;">
+        <button class="btn green" id="loginBtn" style="flex:1;">Log in</button>
+        <button class="btn ghost" id="signupBtn" style="flex:1;">Sign up</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- App -->
+  <div id="appView" class="hidden">
+    <div class="topbar">
+      <div><h1 style="margin:0;">Work Hours</h1><span class="who" id="who"></span></div>
+      <button class="btn ghost" id="logoutBtn">Log out</button>
+    </div>
+
+    <div class="card clock">
+      <div class="status" id="status">Not clocked in</div>
+      <button class="bigbtn in" id="clockBtn">Clock In</button>
+    </div>
+
+    <div class="pbar">
+      <button class="nav" id="prevP">‹</button>
+      <div style="text-align:center;"><div class="lbl" id="pLabel">—</div><div class="tot" id="pTotal">0.00 h</div></div>
+      <button class="nav" id="nextP">›</button>
+    </div>
+
+    <div class="tablewrap">
+      <table><thead><tr><th>Date</th><th>In</th><th>Out</th><th>Break</th><th>Hours</th><th>Note</th><th></th></tr></thead>
+      <tbody id="rows"></tbody></table>
+    </div>
+
+    <div class="earn" id="earn"></div>
+
+    <div class="actions">
+      <button class="btn ghost" id="addRow">+ Add day</button>
+    </div>
+    <div class="sync" id="sync"></div>
+
+    <div class="card" id="emailCard" style="margin-top:18px;">
+      <div class="ehdr">Email this period</div>
+      <input class="field" id="emTo" placeholder="Recipient email" autocomplete="email" inputmode="email">
+      <input class="field" id="emSubj" placeholder="Subject">
+      <textarea class="field" id="emTpl" placeholder="Your message. Put {{table}} where the hours table should go."></textarea>
+      <div class="ehint">
+        Variables: <code>{{table}}</code> (hours table), <code>{{summary}}</code> (the Hours / After-tax / Take-home cards), <code>{{period}}</code>, <code>{{total}}</code>.
+        If you don't include <code>{{summary}}</code>, the cards are shown above the table automatically.
+        Recipient, subject and message are saved automatically.
+        <b>Email this period</b> opens your mail app with everything prefilled (plain-text table) so you can just hit send,
+        and also copies a <b>formatted table</b> to your clipboard — paste it into the body for the styled version.
+      </div>
+      <div class="row" style="margin-top:12px;">
+        <button class="btn green" id="emSend">✉ Email this period</button>
+        <button class="btn ghost" id="emCopy">Copy formatted email</button>
+      </div>
+      <div class="sync" id="emStatus"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ---------- tiny API helper (cookies travel automatically, same origin) ----------
+async function api(path, method, data){
+  const opt = { method: method||"GET", headers:{}, credentials:"same-origin" };
+  if(data!==undefined){ opt.headers["Content-Type"]="application/json"; opt.body=JSON.stringify(data); }
+  const r = await fetch("/api"+path, opt);
+  let j={}; try{ j=await r.json(); }catch(e){}
+  return { ok:r.ok, status:r.status, data:j };
+}
+
+// ---------- pay / time helpers ----------
+const PAY = { grossPerHour:150, afterTaxPerHour:1842/21.5, feriePct:0.125 };
+const pad = n => String(n).padStart(2,"0");
+const todayStr = () => { const d=new Date(); return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); };
+const nowTime = () => { const d=new Date(); return pad(d.getHours())+":"+pad(d.getMinutes()); };
+const uid = () => Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const kr = x => Math.round(x).toLocaleString("da-DK")+" kr";
+function grossOf(e){ if(!e.in||!e.out) return null; const [a,b]=e.in.split(":").map(Number),[c,d]=e.out.split(":").map(Number); let m=(c*60+d)-(a*60+b); if(m<0)m+=1440; return m/60; }
+const brk = e => e.break!=null ? Number(e.break) : 30;
+// Normalize free-typed time to 24h "HH:MM" ("8"->"08:00", "830"->"08:30", "0800"->"08:00", "8:5"->"08:05"). Blank stays blank.
+function normTime(s){
+  s = (s||"").trim(); if(!s) return "";
+  let h, m;
+  if(s.includes(":")){ const [a,b]=s.split(":"); h=parseInt(a,10); m=parseInt(b||"0",10); }
+  else { const d=s.replace(/\D/g,""); if(d.length<=2){ h=parseInt(d,10); m=0; } else { h=parseInt(d.slice(0,d.length-2),10); m=parseInt(d.slice(-2),10); } }
+  if(isNaN(h)||isNaN(m)||h>23||m>59) return s; // leave odd input untouched rather than mangle it
+  return pad(h)+":"+pad(m);
+}
+function hoursOf(e){ const g=grossOf(e); if(g==null) return null; return Math.max(0, g-brk(e)/60); }
+function iso(d){ return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
+function periodFor(offset){ const now=new Date(); let y=now.getFullYear(), m=now.getMonth(); if(now.getDate()>20)m+=1; m+=offset; const end=new Date(y,m,20); const start=new Date(end.getFullYear(),end.getMonth()-1,21); return {start,end}; }
+const fmtD = d => d.toLocaleDateString(undefined,{month:"short",day:"numeric"});
+const fmtDY = d => d.toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"});
+const inPeriod = (ds,p) => ds>=iso(p.start) && ds<=iso(p.end);
+const esc = s => String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+// ---------- email: report + renderers ----------
+const DEF_SUBJ = "Work hours {{period}}";
+const DEF_TPL  = "Hi,\n\nHere are my work hours for {{period}}:\n\n{{table}}\n\nTotal: {{total}} hours.\n\nBest regards";
+
+function periodReport(off){
+  const p = periodFor(off);
+  const list = entries.filter(e=>inPeriod(e.date,p)).sort((a,b)=> a.date<b.date?-1:a.date>b.date?1:(a.in||"").localeCompare(b.in||""));
+  let paid=0, full=0;
+  const rows = list.map(e=>{
+    const h=hoursOf(e), g=grossOf(e); if(h) paid+=h; if(g) full+=g;
+    const wd=new Date(e.date+"T00:00:00").toLocaleDateString(undefined,{weekday:"short"});
+    return { date:e.date, wd, in:e.in||"", out:e.out||"", brk:brk(e), hours:h, note:e.note||"" };
+  });
+  const afterTax = paid*PAY.afterTaxPerHour, ferie = paid*PAY.grossPerHour*PAY.feriePct;
+  return { label: fmtD(p.start)+" – "+fmtDY(p.end), rows, paid, full, afterTax, ferie, take: afterTax+ferie };
+}
+// The three summary cards, mirroring the website (inline styles for email clients).
+function emailSummaryHtml(rep){
+  const card = (lbl,val,sub,hi)=>
+    '<td width="33.33%" valign="top" style="padding:0 5px;">'+
+      '<div style="border:1px solid '+(hi?'#cfe7d8':'#e6e6e3')+';background:'+(hi?'#eaf5ee':'#ffffff')+';border-radius:12px;padding:13px 15px;">'+
+        '<div style="font-size:10px;letter-spacing:.4px;text-transform:uppercase;color:#6b6b6b;font-family:Arial,Helvetica,sans-serif;">'+lbl+'</div>'+
+        '<div style="font-size:20px;font-weight:bold;color:#1d1d1f;margin-top:4px;font-family:Arial,Helvetica,sans-serif;white-space:nowrap;">'+val+'</div>'+
+        '<div style="font-size:11px;color:#6b6b6b;margin-top:3px;font-family:Arial,Helvetica,sans-serif;">'+sub+'</div>'+
+      '</div></td>';
+  return '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:separate;width:100%;margin:0 -5px;"><tr>'+
+    card('Hours', rep.paid.toFixed(2)+' h', rep.full.toFixed(2)+' h worked', false)+
+    card('After tax', kr(rep.afterTax), '+ feriepenge '+kr(rep.ferie), true)+
+    card('Take-home', kr(rep.take), 'after tax + feriepenge', false)+
+  '</tr></table>';
+}
+function emailHtmlTable(rep){
+  const th = (s,al)=>'<th align="'+(al||'left')+'" style="padding:9px 12px;text-align:'+(al||'left')+';background:#1a7f4b;color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:.5px;font-weight:bold;">'+s+'</th>';
+  const td = (s,al,extra)=>'<td align="'+(al||'left')+'" style="padding:9px 12px;text-align:'+(al||'left')+';border-bottom:1px solid #eeeeee;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#1d1d1f;'+(extra||'')+'">'+s+'</td>';
+  let bodyRows = rep.rows.map((r,i)=>
+    '<tr style="background:'+(i%2?'#ffffff':'#fafafa')+';">'+
+      td('<b>'+esc(r.date)+'</b><br><span style="color:#9a9a98;font-size:11px;">'+esc(r.wd)+'</span>')+
+      td(esc(r.in)||'—','center')+ td(esc(r.out)||'—','center')+ td(r.brk+' min','center')+
+      td(r.hours!=null?r.hours.toFixed(2):'—','right','font-weight:bold;')+
+      td(esc(r.note)||'<span style="color:#c8c8c6;">—</span>')+'</tr>'
+  ).join("");
+  if(!rep.rows.length) bodyRows = '<tr><td colspan="6" style="padding:22px;text-align:center;color:#9a9a98;font-family:Arial,Helvetica,sans-serif;font-size:13px;">No hours logged for this period.</td></tr>';
+  const total = '<tr style="background:#eaf5ee;">'+
+    '<td colspan="4" style="padding:11px 12px;font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:bold;color:#1d1d1f;border-top:2px solid #cfe7d8;">Total</td>'+
+    '<td align="right" style="padding:11px 12px;text-align:right;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:bold;color:#1a7f4b;border-top:2px solid #cfe7d8;">'+rep.paid.toFixed(2)+' h</td>'+
+    '<td style="border-top:2px solid #cfe7d8;"></td></tr>';
+  return '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;width:100%;border:1px solid #e6e6e3;border-radius:12px;overflow:hidden;">'+
+    '<thead><tr>'+[th('Date'),th('In','center'),th('Out','center'),th('Break','center'),th('Hours','right'),th('Note')].join("")+'</tr></thead>'+
+    '<tbody>'+bodyRows+total+'</tbody></table>';
+}
+function emailTextSummary(rep){
+  return "Hours:     "+rep.paid.toFixed(2)+" h  ("+rep.full.toFixed(2)+" h worked)\n"+
+         "After tax: "+kr(rep.afterTax)+"  (+ feriepenge "+kr(rep.ferie)+")\n"+
+         "Take-home: "+kr(rep.take);
+}
+function emailTextTable(rep){
+  const pd=(s,w)=>String(s).padEnd(w);
+  const head = pd("Date",12)+pd("In",7)+pd("Out",7)+pd("Break",7)+pd("Hours",8)+"Note";
+  const sep = "-".repeat(52);
+  let out = head+"\n"+sep+"\n";
+  if(!rep.rows.length) out += "No hours logged for this period.\n";
+  else for(const r of rep.rows) out += pd(r.date,12)+pd(r.in||"-",7)+pd(r.out||"-",7)+pd(r.brk+"m",7)+pd(r.hours!=null?r.hours.toFixed(2):"-",8)+(r.note||"")+"\n";
+  out += sep+"\n"+pd("Total",33)+rep.paid.toFixed(2)+" h";
+  return out;
+}
+// Plain-text body for mailto. {{summary}} optional; if absent, summary is shown above the table.
+function fillVarsText(tpl, rep){
+  let t = /{{\s*table\s*}}/.test(tpl) ? tpl : (tpl + "\n\n{{table}}");
+  const hasSummary = /{{\s*summary\s*}}/.test(t);
+  const tableBlock = (hasSummary ? "" : emailTextSummary(rep)+"\n\n") + emailTextTable(rep);
+  return t.replace(/{{\s*summary\s*}}/g, emailTextSummary(rep))
+          .replace(/{{\s*table\s*}}/g, tableBlock)
+          .replace(/{{\s*period\s*}}/g, rep.label)
+          .replace(/{{\s*total\s*}}/g, rep.paid.toFixed(2));
+}
+// The full designed HTML email (banner + the user's message with cards + table injected).
+function emailHtmlDocument(rep, tpl){
+  let t = /{{\s*table\s*}}/.test(tpl) ? tpl : (tpl + "\n\n{{table}}");
+  const hasSummary = /{{\s*summary\s*}}/.test(t);
+  t = esc(t).replace(/\n/g,"<br>");
+  const tableBlock = (hasSummary ? "" : emailSummaryHtml(rep)+'<div style="height:14px;line-height:14px;">&nbsp;</div>') + emailHtmlTable(rep);
+  const inner = t.replace(/{{\s*summary\s*}}/g, emailSummaryHtml(rep))
+                 .replace(/{{\s*table\s*}}/g, tableBlock)
+                 .replace(/{{\s*period\s*}}/g, esc(rep.label))
+                 .replace(/{{\s*total\s*}}/g, rep.paid.toFixed(2));
+  return '<div style="background:#f7f7f5;padding:24px 16px;font-family:Arial,Helvetica,sans-serif;">'+
+    '<div style="max-width:640px;margin:0 auto;background:#ffffff;border:1px solid #e6e6e3;border-radius:16px;overflow:hidden;">'+
+      '<div style="background:#1a7f4b;padding:18px 22px;">'+
+        '<div style="color:#ffffff;font-size:18px;font-weight:bold;font-family:Arial,Helvetica,sans-serif;">Work Hours</div>'+
+        '<div style="color:#cfe7d8;font-size:13px;margin-top:2px;font-family:Arial,Helvetica,sans-serif;">'+esc(rep.label)+'</div>'+
+      '</div>'+
+      '<div style="padding:22px;color:#1d1d1f;font-size:14px;line-height:1.55;font-family:Arial,Helvetica,sans-serif;">'+inner+'</div>'+
+    '</div>'+
+    '<div style="max-width:640px;margin:10px auto 0;text-align:center;color:#b0b0ae;font-size:11px;font-family:Arial,Helvetica,sans-serif;">Sent from Work Hours</div>'+
+  '</div>';
+}
+// Rich copy that works on plain-HTTP origins (Clipboard API is blocked there).
+function copyRich(html){
+  const div=document.createElement("div");
+  div.setAttribute("style","position:fixed;left:-9999px;top:0;");
+  div.contentEditable="true"; div.innerHTML=html;
+  document.body.appendChild(div);
+  const range=document.createRange(); range.selectNodeContents(div);
+  const sel=window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+  let ok=false; try{ ok=document.execCommand("copy"); }catch(e){}
+  sel.removeAllRanges(); document.body.removeChild(div);
+  return ok;
+}
+
+// ---------- state ----------
+let entries = [];
+let offset = 0;
+let saveTimer = null;
+let settings = {};
+let setTimer = null;
+
+function saveSettingsSoon(){
+  document.getElementById("emStatus").textContent = "Saving…";
+  clearTimeout(setTimer);
+  setTimer = setTimeout(async ()=>{
+    const r = await api("/settings", "PUT", { settings });
+    document.getElementById("emStatus").textContent = r.ok ? "Saved" : "Save failed — will retry on next change";
+  }, 500);
+}
+
+function saveSoon(){
+  document.getElementById("sync").textContent = "Saving…";
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async ()=>{
+    const r = await api("/entries", "PUT", { entries });
+    document.getElementById("sync").textContent = r.ok ? "All changes saved" : "Save failed — will retry on next change";
+  }, 500);
+}
+
+function openToday(){ const t=todayStr(); return entries.find(e=>e.date===t && e.in && !e.out); }
+
+function render(){
+  const open = openToday();
+  const btn = document.getElementById("clockBtn");
+  if(open){ btn.textContent="Clock Out"; btn.className="bigbtn out"; document.getElementById("status").innerHTML="Clocked in at <b>"+open.in+"</b>"; }
+  else { btn.textContent="Clock In"; btn.className="bigbtn in"; document.getElementById("status").textContent="Not clocked in"; }
+
+  const p = periodFor(offset);
+  document.getElementById("pLabel").textContent = fmtD(p.start)+" – "+fmtDY(p.end);
+  const list = entries.filter(e=>inPeriod(e.date,p)).sort((a,b)=> a.date<b.date?-1:a.date>b.date?1:(a.in||"").localeCompare(b.in||""));
+  let total=0, paid=0, full=0;
+  const tb = document.getElementById("rows"); tb.innerHTML="";
+  if(list.length===0){ tb.innerHTML='<tr><td colspan="7" class="empty">No hours logged for this period.</td></tr>'; }
+  else for(const e of list){
+    const h=hoursOf(e); if(h) total+=h;
+    const g=grossOf(e); if(g)full+=g; if(h)paid+=h;
+    const wd=new Date(e.date+"T00:00:00").toLocaleDateString(undefined,{weekday:"short"});
+    const tr=document.createElement("tr");
+    tr.innerHTML =
+      '<td><input type="date" value="'+(e.date||"")+'" data-f="date" data-id="'+e.id+'"><span class="wd">'+wd+'</span></td>'+
+      '<td><input type="text" class="tm" inputmode="numeric" maxlength="5" placeholder="--:--" value="'+(e.in||"")+'" data-f="in" data-id="'+e.id+'"></td>'+
+      '<td><input type="text" class="tm" inputmode="numeric" maxlength="5" placeholder="--:--" value="'+(e.out||"")+'" data-f="out" data-id="'+e.id+'"></td>'+
+      '<td><input type="number" class="brk" min="0" step="5" value="'+brk(e)+'" data-f="break" data-id="'+e.id+'"></td>'+
+      '<td class="hrs">'+(h!=null?h.toFixed(2):"—")+'</td>'+
+      '<td><input type="text" value="'+(e.note||"").replace(/"/g,"&quot;")+'" placeholder="—" data-f="note" data-id="'+e.id+'"></td>'+
+      '<td><button class="del" data-del="'+e.id+'">✕</button></td>';
+    tb.appendChild(tr);
+  }
+  document.getElementById("pTotal").textContent = total.toFixed(2)+" h";
+
+  const afterTax = paid*PAY.afterTaxPerHour, ferie = paid*PAY.grossPerHour*PAY.feriePct;
+  document.getElementById("earn").innerHTML = list.length ?
+    '<div class="ecard"><div class="elbl">Hours</div><div class="eval">'+paid.toFixed(2)+' h</div><div class="esub">'+full.toFixed(2)+' h worked</div></div>'+
+    '<div class="ecard hi"><div class="elbl">After tax</div><div class="eval">'+kr(afterTax)+'</div><div class="esub">+ feriepenge '+kr(ferie)+'</div></div>'+
+    '<div class="ecard"><div class="elbl">Take-home</div><div class="eval">'+kr(afterTax+ferie)+'</div><div class="esub">after tax + feriepenge</div></div>' : "";
+}
+
+// ---------- events ----------
+document.getElementById("clockBtn").addEventListener("click", ()=>{
+  const open=openToday();
+  if(open){ open.out=nowTime(); } else { entries.push({id:uid(), date:todayStr(), in:nowTime(), out:null, break:30, note:""}); }
+  offset=0; render(); saveSoon();
+});
+document.getElementById("rows").addEventListener("input", e=>{
+  const t=e.target; if(!t.dataset.id) return;
+  const en=entries.find(x=>x.id===t.dataset.id); if(!en) return;
+  en[t.dataset.f] = t.dataset.f==="break" ? (t.value===""?0:Number(t.value)) : t.value;
+  saveSoon();
+});
+document.getElementById("rows").addEventListener("change", e=>{
+  const t=e.target; if(!t.dataset.id) return;
+  if(t.dataset.f==="in" || t.dataset.f==="out"){
+    const en=entries.find(x=>x.id===t.dataset.id);
+    if(en){ en[t.dataset.f] = normTime(en[t.dataset.f]); saveSoon(); }
+  }
+  if(t.dataset.f!=="note") render();
+});
+document.getElementById("rows").addEventListener("click", e=>{
+  const id=e.target.dataset.del; if(!id) return;
+  entries=entries.filter(x=>x.id!==id); render(); saveSoon();
+});
+document.getElementById("addRow").addEventListener("click", ()=>{
+  const p=periodFor(offset);
+  const d=(todayStr()>=iso(p.start)&&todayStr()<=iso(p.end))?todayStr():iso(p.end);
+  entries.push({id:uid(), date:d, in:"09:00", out:"17:00", break:30, note:""}); render(); saveSoon();
+});
+document.getElementById("prevP").addEventListener("click", ()=>{ offset--; render(); });
+document.getElementById("nextP").addEventListener("click", ()=>{ offset++; render(); });
+
+// ---------- email ----------
+function captureSettings(){
+  settings.email    = document.getElementById("emTo").value.trim();
+  settings.subject  = document.getElementById("emSubj").value;
+  settings.template = document.getElementById("emTpl").value;
+  saveSettingsSoon();
+}
+["emTo","emSubj","emTpl"].forEach(id => document.getElementById(id).addEventListener("input", captureSettings));
+
+function doEmail(copyOnly){
+  const rep   = periodReport(offset);
+  const subjT = (settings.subject!=null && settings.subject!=="") ? settings.subject : DEF_SUBJ;
+  const tplT  = (settings.template!=null && settings.template!=="") ? settings.template : DEF_TPL;
+  const subject = subjT.replace(/{{\s*period\s*}}/g, rep.label).replace(/{{\s*total\s*}}/g, rep.paid.toFixed(2));
+  const ok = copyRich(emailHtmlDocument(rep, tplT));
+  const st = document.getElementById("emStatus");
+  if(copyOnly){
+    st.textContent = ok ? "Formatted email copied — paste it into a new message." : "Couldn't access the clipboard (browser blocked it).";
+    return;
+  }
+  const to = (settings.email||"").trim();
+  const url = "mailto:"+to+"?subject="+encodeURIComponent(subject)+"&body="+encodeURIComponent(fillVarsText(tplT, rep));
+  st.textContent = ok ? "Opening your mail app… formatted table copied — paste to swap in the styled version."
+                      : "Opening your mail app… (clipboard copy was blocked, so the plain-text table is used).";
+  window.location.href = url;
+}
+document.getElementById("emSend").addEventListener("click", ()=>doEmail(false));
+document.getElementById("emCopy").addEventListener("click", ()=>doEmail(true));
+
+// ---------- auth ----------
+function showApp(username){
+  document.getElementById("authView").classList.add("hidden");
+  document.getElementById("appView").classList.remove("hidden");
+  document.getElementById("who").textContent = "Signed in as "+username;
+}
+async function loadEntries(){ const r=await api("/entries"); entries = (r.ok && r.data.entries) ? r.data.entries : []; render(); }
+async function loadSettings(){
+  const r=await api("/settings"); settings = (r.ok && r.data.settings) ? r.data.settings : {};
+  document.getElementById("emTo").value   = settings.email || "";
+  document.getElementById("emSubj").value = (settings.subject!=null && settings.subject!=="") ? settings.subject : DEF_SUBJ;
+  document.getElementById("emTpl").value  = (settings.template!=null && settings.template!=="") ? settings.template : DEF_TPL;
+}
+async function doAuth(path){
+  const username=document.getElementById("auUser").value.trim();
+  const password=document.getElementById("auPass").value;
+  const err=document.getElementById("auErr"); err.textContent="";
+  if(!username||!password){ err.textContent="Enter a username and password."; return; }
+  const r=await api(path, "POST", {username, password});
+  if(r.ok){ showApp(r.data.username); await loadEntries(); await loadSettings(); }
+  else err.textContent = r.data.error || "Something went wrong.";
+}
+document.getElementById("loginBtn").addEventListener("click", ()=>doAuth("/login"));
+document.getElementById("signupBtn").addEventListener("click", ()=>doAuth("/signup"));
+document.getElementById("auPass").addEventListener("keydown", e=>{ if(e.key==="Enter") doAuth("/login"); });
+document.getElementById("logoutBtn").addEventListener("click", async ()=>{ await api("/logout","POST"); location.reload(); });
+
+// ---------- boot ----------
+(async ()=>{
+  const me = await api("/me");
+  if(me.ok){ showApp(me.data.username); await loadEntries(); await loadSettings(); }
+})();
+</script>
+</body>
+</html>

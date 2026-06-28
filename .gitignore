@@ -1,0 +1,11 @@
+# Real seed data (personal) — keep it out of the repo. Use seed.example.json as the template.
+seed.json
+
+# Local dev data dir created by `node server.js`
+data/
+
+# Nix build output
+result
+result-*
+
+*.tmp
