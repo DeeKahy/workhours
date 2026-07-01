@@ -35,6 +35,11 @@
             port = lib.mkOption { type = lib.types.port; default = 8080; description = "TCP port to listen on."; };
             address = lib.mkOption { type = lib.types.str; default = "0.0.0.0"; description = "Bind address."; };
             openFirewall = lib.mkOption { type = lib.types.bool; default = false; description = "Open the port in the firewall."; };
+            environmentFile = lib.mkOption {
+              type = lib.types.nullOr lib.types.path;
+              default = null;
+              description = "Optional systemd EnvironmentFile (e.g. to supply SIGNUP_TOKEN for invite-gated public signup). Kept outside the Nix store.";
+            };
           };
 
           config = lib.mkIf cfg.enable {
@@ -53,6 +58,8 @@
                 StateDirectory = "workhours";        # creates/owns /var/lib/workhours
                 Restart = "on-failure";
                 RestartSec = 2;
+              } // lib.optionalAttrs (cfg.environmentFile != null) {
+                EnvironmentFile = cfg.environmentFile;
               };
             };
 

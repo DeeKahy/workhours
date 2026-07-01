@@ -6,8 +6,11 @@ for the current period. Phone + desktop friendly; installable to the iOS home sc
 
 - **Backend:** one `server.js`, Node.js built-in modules only (no npm, no `node_modules`).
 - **Storage:** a single JSON file at `$DATA_DIR/db.json`.
-- **Auth:** open signup, **plaintext passwords** — intentional, acceptable **only** behind a
-  trusted network (LAN/VPN). Do **not** expose this to the public internet.
+- **Auth:** passwords are **scrypt-hashed** (built-in `crypto`, still no deps). Signup is open
+  by default, or **invite-gated** when `SIGNUP_TOKEN` is set — set it before exposing publicly.
+  Cookies gain `Secure` automatically when reached over HTTPS (behind a TLS proxy), and repeated
+  failed logins are throttled per username. Legacy plaintext passwords still work and are
+  upgraded to a hash on next login.
 - **Packaging:** a Nix flake exposing `packages.workhours` + `nixosModules.default`.
 
 ## Run locally

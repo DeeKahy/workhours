@@ -74,10 +74,11 @@ textarea.field { resize:vertical; min-height:130px; line-height:1.45; font-famil
   <!-- Login / signup -->
   <div id="authView">
     <h1>Work Hours</h1>
-    <p class="sub">Log in, or pick any username and password to sign up.</p>
+    <p class="sub">Log in, or sign up (an invite code may be required).</p>
     <div class="card" style="max-width:340px;">
       <input class="field" id="auUser" placeholder="Username" autocomplete="username">
       <input class="field" id="auPass" type="password" placeholder="Password" autocomplete="current-password">
+      <input class="field" id="auInvite" placeholder="Invite code (sign up only)" autocomplete="off">
       <div class="err" id="auErr"></div>
       <div class="row" style="margin-top:6px;">
         <button class="btn green" id="loginBtn" style="flex:1;">Log in</button>
@@ -422,9 +423,10 @@ async function loadSettings(){
 async function doAuth(path){
   const username=document.getElementById("auUser").value.trim();
   const password=document.getElementById("auPass").value;
+  const inviteCode=document.getElementById("auInvite").value.trim();
   const err=document.getElementById("auErr"); err.textContent="";
   if(!username||!password){ err.textContent="Enter a username and password."; return; }
-  const r=await api(path, "POST", {username, password});
+  const r=await api(path, "POST", {username, password, inviteCode});
   if(r.ok){ showApp(r.data.username); await loadEntries(); await loadSettings(); }
   else err.textContent = r.data.error || "Something went wrong.";
 }
