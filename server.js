@@ -71,6 +71,33 @@ const loginBlocked = un => { const e = loginAttempts.get(un); return !!(e && e.u
 function loginFail(un){ const e = loginAttempts.get(un) || {fails:0, until:0}; if(++e.fails >= LOGIN_MAX){ e.until = Date.now()+LOGIN_WINDOW_MS; e.fails = 0; } loginAttempts.set(un, e); }
 const loginReset = un => loginAttempts.delete(un);
 
+// Clock token: lets an iPhone Shortcuts automation ("when I arrive at work") clock
+// in/out without a browser session. Only its sha256 is stored; the raw token is
+// shown once when generated. POST /api/clock/in|out with "Authorization: Bearer <token>".
+const sha256 = s => crypto.createHash("sha256").update(s).digest("hex");
+function userOfToken(req){
+  const m = /^Bearer\s+(\S+)$/i.exec(req.headers.authorization || ""); if(!m) return null;
+  const h = sha256(m[1]);
+  return Object.keys(db.users).find(un => db.users[un].clockTokenHash === h) || null;
+}
+const pad2 = n => String(n).padStart(2, "0");
+// Server-local date/time (the service runs in the host's timezone), same format as the UI.
+function nowLocal(){ const d = new Date(); return { date: d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate()), time: pad2(d.getHours())+":"+pad2(d.getMinutes()) }; }
+function clock(un, dir){
+  const u = db.users[un]; u.entries = u.entries || [];
+  const { date, time } = nowLocal();
+  const open = u.entries.find(e => e.date === date && e.in && !e.out);
+  if(dir === "in"){
+    // Geofences can fire more than once; an already-open entry makes this a no-op.
+    if(open) return { ok:true, status:"already", message:"Already clocked in since "+open.in };
+    const first = !u.entries.some(e => e.date === date); // only the day's first stint gets the default break
+    u.entries.push({ id: Date.now().toString(36)+crypto.randomBytes(2).toString("hex"), date, in: time, out: null, break: first ? 30 : 0, note: "" });
+    saveDB(db); return { ok:true, status:"in", message:"Clocked in at "+time };
+  }
+  if(!open) return { ok:true, status:"already", message:"Not clocked in" };
+  open.out = time; saveDB(db); return { ok:true, status:"out", message:"Clocked out at "+time };
+}
+
 const server = http.createServer(async (req, res) => {
   const p = new URL(req.url, "http://x").pathname;
 
@@ -98,9 +125,23 @@ const server = http.createServer(async (req, res) => {
       const sid = cookies(req).sid; if(sid) sessions.delete(sid);
       return send(res, 200, {ok:true}, {"Set-Cookie":"sid=; HttpOnly; Path=/; Max-Age=0"});
     }
+    if((p === "/api/clock/in" || p === "/api/clock/out") && req.method === "POST"){
+      const tu = userOfToken(req);
+      if(!tu) return send(res, 401, {error:"invalid or missing clock token"});
+      return send(res, 200, clock(tu, p.endsWith("/in") ? "in" : "out"));
+    }
     const un = userOf(req);
     if(!un) return send(res, 401, {error:"not logged in"});
-    if(p === "/api/me") return send(res, 200, {username: un});
+    if(p === "/api/me") return send(res, 200, {username: un, clockToken: !!db.users[un].clockTokenHash});
+    if(p === "/api/clock/token" && req.method === "POST"){
+      const t = crypto.randomBytes(24).toString("hex");
+      db.users[un].clockTokenHash = sha256(t); saveDB(db);
+      return send(res, 200, {token: t});
+    }
+    if(p === "/api/clock/token" && req.method === "DELETE"){
+      delete db.users[un].clockTokenHash; saveDB(db);
+      return send(res, 200, {ok:true});
+    }
     if(p === "/api/entries" && req.method === "GET") return send(res, 200, {entries: db.users[un].entries || []});
     if(p === "/api/entries" && req.method === "PUT"){
       const b = await body(req);

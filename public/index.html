@@ -136,6 +136,25 @@ textarea.field { resize:vertical; min-height:130px; line-height:1.45; font-famil
       </div>
       <div class="sync" id="emStatus"></div>
     </div>
+
+    <div class="card" id="autoCard" style="margin-top:18px;">
+      <div class="ehdr">Clock in automatically (iPhone)</div>
+      <div class="ehint" id="tokState"></div>
+      <div id="tokBox" class="hidden" style="margin-top:10px;">
+        <input class="field" id="tokVal" readonly onclick="this.select()">
+        <div class="ehint">
+          Copy this now — it's shown only once. In the <b>Shortcuts</b> app: <b>Automation → + → Arrive</b>,
+          pick your workplace, choose <b>Run Immediately</b>, and add the action <b>Get Contents of URL</b>:<br>
+          URL <code id="tokUrl"></code>, Method <b>POST</b>, Header <code>Authorization</code> = <code>Bearer</code> + space + the token.<br>
+          Make a second <b>Leave</b> automation with <code>/api/clock/out</code> at the end of the URL to clock out.
+          Optionally add <b>Show Notification</b> with the result to see what happened.
+        </div>
+      </div>
+      <div class="row" style="margin-top:12px;">
+        <button class="btn green" id="tokGen">Generate token</button>
+        <button class="btn ghost hidden" id="tokDel">Revoke</button>
+      </div>
+    </div>
   </div>
 
 </div>
@@ -300,6 +319,7 @@ function saveSoon(){
   saveTimer = setTimeout(async ()=>{
     const r = await api("/entries", "PUT", { entries });
     document.getElementById("sync").textContent = r.ok ? "All changes saved" : "Save failed — will retry on next change";
+    saveTimer = null;
   }, 500);
 }
 
@@ -427,7 +447,7 @@ async function doAuth(path){
   const err=document.getElementById("auErr"); err.textContent="";
   if(!username||!password){ err.textContent="Enter a username and password."; return; }
   const r=await api(path, "POST", {username, password, inviteCode});
-  if(r.ok){ showApp(r.data.username); await loadEntries(); await loadSettings(); }
+  if(r.ok){ showApp(r.data.username); const me=await api("/me"); showTokState(me.ok && me.data.clockToken); await loadEntries(); await loadSettings(); }
   else err.textContent = r.data.error || "Something went wrong.";
 }
 document.getElementById("loginBtn").addEventListener("click", ()=>doAuth("/login"));
@@ -435,10 +455,40 @@ document.getElementById("signupBtn").addEventListener("click", ()=>doAuth("/sign
 document.getElementById("auPass").addEventListener("keydown", e=>{ if(e.key==="Enter") doAuth("/login"); });
 document.getElementById("logoutBtn").addEventListener("click", async ()=>{ await api("/logout","POST"); location.reload(); });
 
+// ---------- clock token (iPhone automation) ----------
+function showTokState(has){
+  document.getElementById("tokState").textContent = has
+    ? "A token is active. Generating a new one replaces it (update your Shortcuts)."
+    : "Generate a token so an iPhone Shortcuts automation can clock you in when you arrive at work.";
+  document.getElementById("tokGen").textContent = has ? "Replace token" : "Generate token";
+  document.getElementById("tokDel").classList.toggle("hidden", !has);
+}
+document.getElementById("tokGen").addEventListener("click", async ()=>{
+  const has = !document.getElementById("tokDel").classList.contains("hidden");
+  if(has && !confirm("Replace the token? The old one stops working.")) return;
+  const r = await api("/clock/token", "POST"); if(!r.ok) return;
+  document.getElementById("tokVal").value = r.data.token;
+  document.getElementById("tokUrl").textContent = location.origin+"/api/clock/in";
+  document.getElementById("tokBox").classList.remove("hidden");
+  showTokState(true);
+});
+document.getElementById("tokDel").addEventListener("click", async ()=>{
+  if(!confirm("Revoke the token? Your automations stop working.")) return;
+  const r = await api("/clock/token", "DELETE"); if(!r.ok) return;
+  document.getElementById("tokBox").classList.add("hidden");
+  showTokState(false);
+});
+
+// An automation may have clocked in while this page sat in the background; reload
+// so the next save doesn't overwrite it with a stale copy.
+document.addEventListener("visibilitychange", ()=>{
+  if(document.visibilityState==="visible" && !saveTimer && !document.getElementById("appView").classList.contains("hidden")) loadEntries();
+});
+
 // ---------- boot ----------
 (async ()=>{
   const me = await api("/me");
-  if(me.ok){ showApp(me.data.username); await loadEntries(); await loadSettings(); }
+  if(me.ok){ showApp(me.data.username); showTokState(me.data.clockToken); await loadEntries(); await loadSettings(); }
 })();
 </script>
   <!-- source link -->
